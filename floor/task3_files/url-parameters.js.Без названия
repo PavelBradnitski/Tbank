@@ -1,0 +1,41 @@
+// eslint-disable-next-line import/no-unresolved,import/extensions
+import config from './configs/config.js';
+
+const appName = document.location.search.match(`app=[a-zA-Z0-9_]+`);
+const authSystem = document.location.search.match(`auth=[a-zA-Z_]+`);
+
+// eslint-disable-next-line no-shadow
+function setParams(appName, authSystem) {
+    config.appName = appName[0].replace(`=`, `/`);
+    config.authSystem = authSystem ? authSystem[0].replace(`auth=`, ``) : undefined;
+}
+
+if (appName) {
+    setParams(appName, authSystem);
+} else {
+    window.addEventListener(`message`, function listener(event) {
+        if (!event.data) {
+            return;
+        }
+
+        if (event.data.messageCode === `tmsg-url-response`) {
+            /* eslint-disable no-shadow */
+            const appName = event.data.data.match(`app=[a-zA-Z0-9_]+`);
+            const authSystem = event.data.data.match(`auth=[a-zA-Z_]+`);
+            /* eslint-enable no-shadow */
+
+            if (appName) {
+                setParams(appName, authSystem);
+            }
+
+            window.removeEventListener(`message`, listener);
+        }
+    });
+
+    window.parent.postMessage(
+        {
+            messageCode: `tmsg-url-request`,
+        },
+        `*`,
+    );
+}
